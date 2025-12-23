@@ -1,0 +1,23 @@
+# Flutter
+.dart_tool/
+.packages
+.pub/
+build/
+
+# iOS
+ios/Pods/
+ios/Runner.xcworkspace
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+
+# Firebase
+ios/Runner/GoogleService-Info.plist
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
