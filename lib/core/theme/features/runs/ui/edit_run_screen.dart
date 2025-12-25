@@ -6,7 +6,6 @@ import '../provider/runs_provider.dart';
 
 class EditRunScreen extends StatefulWidget {
   final Run run;
-
   const EditRunScreen({super.key, required this.run});
 
   @override
@@ -14,76 +13,51 @@ class EditRunScreen extends StatefulWidget {
 }
 
 class _EditRunScreenState extends State<EditRunScreen> {
-  late TextEditingController titleController;
-  late TextEditingController notesController;
-  late TextEditingController distanceController;
-  late TextEditingController durationController;
+  late TextEditingController title;
+  late TextEditingController notes;
+  late TextEditingController distance;
+  late TextEditingController duration;
 
   @override
   void initState() {
     super.initState();
-    titleController = TextEditingController(text: widget.run.title);
-    notesController = TextEditingController(text: widget.run.notes);
-    distanceController =
+    title = TextEditingController(text: widget.run.title);
+    notes = TextEditingController(text: widget.run.notes);
+    distance =
         TextEditingController(text: widget.run.distance.toString());
-    durationController =
+    duration =
         TextEditingController(text: widget.run.duration.toString());
   }
 
   @override
-  void dispose() {
-    titleController.dispose();
-    notesController.dispose();
-    distanceController.dispose();
-    durationController.dispose();
-    super.dispose();
-  }
-
-  void _saveChanges() async {
-    final updatedRun = widget.run.copyWith(
-      title: titleController.text,
-      notes: notesController.text,
-      distance: double.tryParse(distanceController.text) ?? 0,
-      duration: int.tryParse(durationController.text) ?? 0,
-       updatedAt: DateTime.now(), createdAt: widget.run.createdAt,
-    );
-
-    await context.read<RunProvider>().updateRun(updatedRun);
-
-    Navigator.pop(context);
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final provider = context.read<RunProvider>();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Run')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: 'Name'),
-            ),
-            TextField(
-              controller: distanceController,
-              decoration: const InputDecoration(labelText: 'Distance (km)'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: durationController,
-              decoration: const InputDecoration(labelText: 'Duration (min)'),
-              keyboardType: TextInputType.number,
-            ),
-            TextField(
-              controller: notesController,
-              decoration: const InputDecoration(labelText: 'Description'),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _saveChanges,
-              child: const Text('Save Changes'),
-            ),
+            TextField(controller: title, decoration: const InputDecoration(labelText: 'Name')),
+            TextField(controller: notes, decoration: const InputDecoration(labelText: 'Notes')),
+            TextField(controller: distance, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Distance')),
+            TextField(controller: duration, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Duration')),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                await provider.updateRun(
+                  widget.run.copyWith(
+                    title: title.text,
+                    notes: notes.text,
+                    distance: double.tryParse(distance.text) ?? 0,
+                    duration: int.tryParse(duration.text) ?? 0,
+                  ),
+                );
+                Navigator.pop(context);
+              },
+              child: const Text('Save'),
+            )
           ],
         ),
       ),

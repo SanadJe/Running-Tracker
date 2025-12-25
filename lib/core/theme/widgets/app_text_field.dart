@@ -7,7 +7,7 @@ class AppTextField extends StatelessWidget {
   const AppTextField({
     super.key,
     required this.label,
-    required this.controller, required String? Function(dynamic value) validator, required int maxLines, required TextInputType keyboardType,
+    required this.controller, required String? Function(dynamic value) validator, required int maxLines, required TextInputType keyboardType, required bool isPassword,
   });
 
   @override

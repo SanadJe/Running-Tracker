@@ -19,16 +19,36 @@ class Run {
     required this.updatedAt,
   });
 
-  factory Run.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+  static double _toDouble(dynamic v) {
+    if (v == null) return 0.0;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString()) ?? 0.0;
+  }
+
+  static int _toInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is num) return v.toInt();
+    return int.tryParse(v.toString()) ?? 0;
+  }
+
+  static DateTime _toDate(dynamic v) {
+    if (v == null) return DateTime.now();
+    if (v is Timestamp) return v.toDate();
+    if (v is DateTime) return v;
+    return DateTime.tryParse(v.toString()) ?? DateTime.now();
+  }
+
+  factory Run.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? {};
+
     return Run(
       id: doc.id,
-      title: data['title'],
-      notes: data['notes'],
-      distance: (data['distance'] as num).toDouble(),
-      duration: data['duration'],
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      title: data['title'] ?? '',
+      notes: data['notes'] ?? '',
+      distance: _toDouble(data['distance']),
+      duration: _toInt(data['duration']),
+      createdAt: _toDate(data['createdAt']),
+      updatedAt: _toDate(data['updatedAt']),
     );
   }
 
@@ -38,20 +58,25 @@ class Run {
       'notes': notes,
       'distance': distance,
       'duration': duration,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 
-  Run copyWith({String? id, required DateTime updatedAt, required DateTime createdAt, required String title, required double distance, required int duration, required String notes}) {
+  Run copyWith({
+    String? title,
+    String? notes,
+    double? distance,
+    int? duration,
+  }) {
     return Run(
-      id: id ?? this.id,
-      title: title,
-      notes: notes,
-      distance: distance,
-      duration: duration,
+      id: id,
+      title: title ?? this.title,
+      notes: notes ?? this.notes,
+      distance: distance ?? this.distance,
+      duration: duration ?? this.duration,
       createdAt: createdAt,
-      updatedAt: updatedAt,
+      updatedAt: DateTime.now(),
     );
   }
 }
