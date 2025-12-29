@@ -1,40 +1,72 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:gano/core/theme/features/auth/provider/auth_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../models/run_model.dart';
 
 class RunProvider extends ChangeNotifier {
   final _db = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
 
-  RunProvider(AuthProvider read);
+  String? get _uid => _auth.currentUser?.uid;
+
+  CollectionReference<Map<String, dynamic>> _runsRef() {
+    final uid = _uid;
+    if (uid == null) {
+      throw Exception('Not authenticated');
+    }
+    return _db.collection('users').doc(uid).collection('runs');
+  }
 
   Stream<List<Run>> runsStream() {
-    return _db
-        .collection('runs')
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map(
-          (snapshot) =>
-              snapshot.docs.map((e) => Run.fromFirestore(e)).toList(),
+    final ref = _runsRef();
+    return ref.orderBy('createdAt', descending: true).snapshots().map(
+          (snap) => snap.docs.map((d) => Run.fromDoc(d)).toList(),
         );
   }
 
-  Future<void> addRun(Run run) async {
-    final doc = _db.collection('runs').doc();
-    await doc.set(run.toMap());
-  }
+  Future<void> addRun({
+    required String title,
+    required String notes,
+    required double distance,
+    required int duration,
+  }) async {
+    final ref = _runsRef();
+    final now = DateTime.now();
 
-  Future<void> updateRun(Run run) async {
-    await _db.collection('runs').doc(run.id).update({
-      'title': run.title,
-      'notes': run.notes,
-      'distance': run.distance,
-      'duration': run.duration,
-      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    await ref.add({
+      'title': title,
+      'notes': notes,
+      'distance': distance,
+      'duration': duration,
+      'createdAt': Timestamp.fromDate(now),
+      'updatedAt': Timestamp.fromDate(now),
     });
   }
 
-  Future<void> deleteRun(String id) async {
-    await _db.collection('runs').doc(id).delete();
+  Future<void> deleteRun(String runId) async {
+    if (runId.trim().isEmpty) throw Exception('runId');
+    final ref = _runsRef();
+    await ref.doc(runId).delete();
+  }
+
+  Future<void> updateRun({
+    required String runId,
+    required String title,
+    required String notes,
+    required double distance,
+    required int duration,
+  }) async {
+    if (runId.trim().isEmpty) throw Exception('runId');
+    final ref = _runsRef();
+    final now = DateTime.now();
+
+    await ref.doc(runId).update({
+      'title': title,
+      'notes': notes,
+      'distance': distance,
+      'duration': duration,
+      'updatedAt': Timestamp.fromDate(now),
+    });
   }
 }

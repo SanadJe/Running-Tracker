@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:gano/core/theme/features/runs/provider/runs_provider.dart';
-import 'package:gano/core/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
 
-import '../models/run_model.dart';
+import '../provider/runs_provider.dart';
 
 class AddRunScreen extends StatefulWidget {
   const AddRunScreen({super.key});
@@ -14,26 +12,53 @@ class AddRunScreen extends StatefulWidget {
 
 class _AddRunScreenState extends State<AddRunScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _title = TextEditingController();
+  final _notes = TextEditingController();
+  final _distance = TextEditingController();
+  final _duration = TextEditingController();
+  bool _loading = false;
 
-  final _nameController = TextEditingController();
-  final _distanceController = TextEditingController();
-  final _timeController = TextEditingController();
-  final _descController = TextEditingController();
+  @override
+  void dispose() {
+    _title.dispose();
+    _notes.dispose();
+    _distance.dispose();
+    _duration.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_loading) return;
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final distanceValue = double.tryParse(_distance.text.trim()) ?? 0.0;
+    final durationValue = int.tryParse(_duration.text.trim()) ?? 0;
+
+    setState(() => _loading = true);
+
+    try {
+      await context.read<RunProvider>().addRun(
+            title: _title.text.trim(),
+            notes: _notes.text.trim(),
+            distance: distanceValue,
+            duration: durationValue,
+          );
+
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add run: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.watch<ThemeProvider>();
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Add Run'),
-        actions: [
-          IconButton(
-            icon: Icon(theme.isDark ? Icons.dark_mode : Icons.light_mode),
-            onPressed: theme.toggleTheme,
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('Add Run')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -41,63 +66,86 @@ class _AddRunScreenState extends State<AddRunScreen> {
           child: ListView(
             children: [
               TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Run Name'),
+                controller: _title,
+                decoration: const InputDecoration(
+                  labelText: 'Run Name',
+                  prefixIcon: Icon(Icons.title),
+                ),
                 validator: (v) =>
-                    v == null || v.isEmpty ? 'Required' : null,
+                    (v == null || v.trim().isEmpty) ? 'Run name required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: _distanceController,
-                decoration:
-                    const InputDecoration(labelText: 'Distance (km)'),
+                controller: _distance,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: 'Distance (km)',
+                  prefixIcon: const Icon(Icons.route),
+                  suffixIcon: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      InkWell(
+                        child: const Icon(Icons.arrow_drop_up),
+                        onTap: () {
+                          final current =
+                              double.tryParse(_distance.text) ?? 0.0;
+                          _distance.text = (current + 0.5).toStringAsFixed(1);
+                        },
+                      ),
+                      InkWell(
+                        child: const Icon(Icons.arrow_drop_down),
+                        onTap: () {
+                          final current =
+                              double.tryParse(_distance.text) ?? 0.0;
+                          if (current > 0.5) {
+                            _distance.text = (current - 0.5).toStringAsFixed(1);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                validator: (v) {
+                  final x = double.tryParse((v ?? '').trim());
+                  if (x == null || x <= 0) {
+                    return 'Enter valid distance';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _duration,
                 keyboardType: TextInputType.number,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Required' : null,
+                decoration: const InputDecoration(
+                  labelText: 'Time (minutes)',
+                  prefixIcon: Icon(Icons.timer),
+                ),
+                validator: (v) {
+                  final x = int.tryParse((v ?? '').trim());
+                  if (x == null || x <= 0) return 'Enter valid duration';
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: _timeController,
-                decoration:
-                    const InputDecoration(labelText: 'Time (minutes)'),
-                keyboardType: TextInputType.number,
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Required' : null,
+                controller: _notes,
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  labelText: 'Description',
+                  prefixIcon: Icon(Icons.notes),
+                ),
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _descController,
-                decoration:
-                    const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _saveRun,
-                child: const Text('Save Run'),
+              const SizedBox(height: 18),
+              FilledButton(
+                onPressed: _loading ? null : _save,
+                child: Text(_loading ? 'Saving...' : 'Save Run'),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  void _saveRun() {
-    if (!_formKey.currentState!.validate()) return;
-
-    context.read<RunProvider>().addRun(
-          Run(
-            id: '',
-            title: _nameController.text,
-            notes: _descController.text,
-            distance: double.parse(_distanceController.text),
-            duration: int.parse(_timeController.text),
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-
-    Navigator.pop(context);
   }
 }

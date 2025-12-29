@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:gano/core/theme/features/auth/ui/register_sceen.dart';
 import 'package:provider/provider.dart';
 
 import '../../../theme_provider.dart';
 import '../provider/auth_provider.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _pass = TextEditingController();
@@ -31,11 +30,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _loading = true);
     try {
-      await context.read<AuthProvider>().login(_email.text, _pass.text);
+      await context.read<AuthProvider>().register(_email.text, _pass.text);
+      if (!mounted) return;
+      Navigator.pop(context); // يرجع لتسجيل الدخول
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account created. Please sign in.')),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
+        SnackBar(content: Text('Register failed: $e')),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -48,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sign In'),
+        title: const Text('Create Account'),
         actions: [
           IconButton(
             onPressed: theme.toggleTheme,
@@ -98,21 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 18),
                   FilledButton(
                     onPressed: _loading ? null : _submit,
-                    child: Text(_loading ? 'Signing in...' : 'Sign In'),
-                  ),
-                  const SizedBox(height: 10),
-                  TextButton(
-                    onPressed: _loading
-                        ? null
-                        : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const RegisterScreen(),
-                              ),
-                            );
-                          },
-                    child: const Text("Don't have an account? Create one"),
+                    child: Text(_loading ? 'Creating...' : 'Create Account'),
                   ),
                 ],
               ),

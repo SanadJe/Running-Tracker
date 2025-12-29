@@ -19,64 +19,29 @@ class Run {
     required this.updatedAt,
   });
 
-  static double _toDouble(dynamic v) {
-    if (v == null) return 0.0;
-    if (v is num) return v.toDouble();
-    return double.tryParse(v.toString()) ?? 0.0;
-  }
+  Map<String, dynamic> toMap() => {
+        'title': title,
+        'notes': notes,
+        'distance': distance,
+        'duration': duration,
+        'createdAt': Timestamp.fromDate(createdAt),
+        'updatedAt': Timestamp.fromDate(updatedAt),
+      };
 
-  static int _toInt(dynamic v) {
-    if (v == null) return 0;
-    if (v is num) return v.toInt();
-    return int.tryParse(v.toString()) ?? 0;
-  }
+  factory Run.fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
 
-  static DateTime _toDate(dynamic v) {
-    if (v == null) return DateTime.now();
-    if (v is Timestamp) return v.toDate();
-    if (v is DateTime) return v;
-    return DateTime.tryParse(v.toString()) ?? DateTime.now();
-  }
-
-  factory Run.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data() ?? {};
+    final created = data['createdAt'];
+    final updated = data['updatedAt'];
 
     return Run(
       id: doc.id,
-      title: data['title'] ?? '',
-      notes: data['notes'] ?? '',
-      distance: _toDouble(data['distance']),
-      duration: _toInt(data['duration']),
-      createdAt: _toDate(data['createdAt']),
-      updatedAt: _toDate(data['updatedAt']),
-    );
-  }
-
-  Map<String, dynamic> toMap() {
-    return {
-      'title': title,
-      'notes': notes,
-      'distance': distance,
-      'duration': duration,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
-    };
-  }
-
-  Run copyWith({
-    String? title,
-    String? notes,
-    double? distance,
-    int? duration,
-  }) {
-    return Run(
-      id: id,
-      title: title ?? this.title,
-      notes: notes ?? this.notes,
-      distance: distance ?? this.distance,
-      duration: duration ?? this.duration,
-      createdAt: createdAt,
-      updatedAt: DateTime.now(),
+      title: (data['title'] ?? '').toString(),
+      notes: (data['notes'] ?? '').toString(),
+      distance: (data['distance'] is num) ? (data['distance'] as num).toDouble() : 0.0,
+      duration: (data['duration'] is num) ? (data['duration'] as num).toInt() : 0,
+      createdAt: (created is Timestamp) ? created.toDate() : DateTime.now(),
+      updatedAt: (updated is Timestamp) ? updated.toDate() : DateTime.now(),
     );
   }
 }
