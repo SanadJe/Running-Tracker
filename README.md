@@ -93,6 +93,7 @@ cd Running-Tracker
 flutter pub get
 
 ## Firestore data structure 
+``
 users (collection)
  └── userId (document)
      └── runs (sub-collection)
@@ -103,6 +104,7 @@ users (collection)
              ├── duration: int
              ├── createdAt: timestamp
              └── updatedAt: timestamp
+             ``
              
 ## Firestore Security Rules
 rules_version = '2';
